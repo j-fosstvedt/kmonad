@@ -45,7 +45,7 @@ foreign import ccall "ioctl_keyboard"
 #else
 
 c_ioctl_keyboard :: CInt -> CInt -> IO CInt
-c_ioctl_keyboard _ _ = Exc.throwing _OSError (Linux, msg)
+c_ioctl_keyboard _ _ = excThrowing _OSError (Linux, msg)
   where msg = "LinEvdevSrc only works on Linux"
 
 #endif
@@ -53,12 +53,12 @@ c_ioctl_keyboard _ _ = Exc.throwing _OSError (Linux, msg)
 -- | Try to acquire an IOCTL grab on a file descriptor
 acquireIoctl :: MonadIO m => Fd -> m ()
 acquireIoctl (Fd h) = liftIO (c_ioctl_keyboard h 1)
-  `ffiErr` Exc.throwing _IoctlGrabError ()
+  `ffiErr` excThrowing _IoctlGrabError ()
 
 -- | Try to release an IOCTL grab on a file descriptor
 releaseIoctl :: MonadIO m => Fd -> m ()
 releaseIoctl (Fd h) = liftIO (c_ioctl_keyboard h 0)
-  `ffiErr`  Exc.throwing _IoctlReleaseError ()
+  `ffiErr`  excThrowing _IoctlReleaseError ()
 
 -- basic types -----------------------------------------------------------------
 

@@ -68,10 +68,10 @@ resolve p = do
 
   if not $ p^.doGlob
     -- When not globbing, check for file-existence
-    then ifM (doesPathExist r) (pure r) (Exc.throwing _PathNoMatches p)
+    then ifM (doesPathExist r) (pure r) (excThrowing _PathNoMatches p)
 
     -- When globbing, do the match
     else (liftIO . glob $ r) >>= \case
-      [] -> Exc.throwing _PathNoMatches p
+      [] -> excThrowing _PathNoMatches p
       [f] -> pure f
-      fs  -> Exc.throwing _PathMultipleMatches (p, fs)
+      fs  -> excThrowing _PathMultipleMatches (p, fs)

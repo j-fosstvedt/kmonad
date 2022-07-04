@@ -29,7 +29,7 @@ type CanLog env m = (MonadReader env m, HasLogEnv env, MonadIO m)
 -- initialization --------------------------------------------------------------
 
 -- | Use 'LogCfg' to run an action in the context of an initialized 'LogEnv'
-withLogging :: (UIO m, HasLogCfg c) => c -> ContT r m LogEnv
+withLogging :: (UIO m, HasLogCfg c) => c -> Ctx r m LogEnv
 withLogging c = ContT $ \f -> do
   raw <- logOptionsHandle (c^.logTarget) False
   withLogFunc (raw & setLogMinLevel (c^.logLevel)) $

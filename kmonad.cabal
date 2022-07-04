@@ -79,6 +79,7 @@ library
 
   exposed-modules:
       K
+      K.App
       K.Initial
       K.Initial.Initial
       K.Initial.Parsing
@@ -96,6 +97,8 @@ library
       K.Layers
       K.Layers.Initial
       K.Layers.KbdFile
+      K.Layers.KbdFile.Initial
+      K.Layers.KbdFile.KExpr
       K.Shell
       K.Shell.Cfg
       K.Shell.Cfg.Cfgable
@@ -121,7 +124,6 @@ library
       K.Shell.KeyIO.LinEvdevSrc
       K.Shell.KeyIO.LinUinputSnk
       K.Shell.Logging
-      K.Shell.Main
       -- KMonad.App
       -- KMonad.App.Cfg
       -- KMonad.App.Cfg.Cfgable

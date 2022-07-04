@@ -7,6 +7,7 @@ module K.Initial.Util.Initial
   , whenNonEmpty
   , ifM
   , duplicates
+  , aflat
   , inRIO
   , reportFail
 
@@ -53,6 +54,14 @@ ifM b x y = b >>= bool y x
 duplicates :: Eq a => [a] -> [a]
 duplicates l = (L.\\) l $ L.nub l
 
+-- | Flatten the second element in an a-list
+--
+-- There is probably a more general way to do that, but that is NotForNow
+aflat :: [(a, [b])] -> [(a, b)]
+aflat = foldMap (\(a, bs) -> map (a,) bs)
+
+
+
 -- maybe helpers ---------------------------------------------------------------
 
 -- | Turn a function with failure into one that also reports the mistake
@@ -66,7 +75,7 @@ reportFail f a = maybe (Left a) Right $ f a
 
 -- | Either throw some error using a prism or return a pure value.
 throwEither :: (MonadError e m) => AReview e t -> Either t a -> m a
-throwEither l = either (Err.throwing l) pure
+throwEither l = either (errThrowing l) pure
 
 -- | Signal programmer mistake with issue-submission instructions.
 devFail :: HasCallStack => Text -> a

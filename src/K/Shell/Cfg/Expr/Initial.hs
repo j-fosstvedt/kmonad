@@ -67,7 +67,7 @@ encode = view printer
 -- | Use an 'Expr' to attempt to decode some value from 'Text'
 decode :: (AsExprError e, MonadError e m) => Expr a -> Text -> m a
 decode e t = case parse (e^.parser) t of
-  Left err -> Err.throwing _ExprError (e^.exprType, t, err)
+  Left err -> errThrowing _ExprError (e^.exprType, t, err)
   Right a -> pure a
 
 -- | Use an 'Expr' to attempt to decode some value from 'Text'
@@ -75,7 +75,7 @@ decoded :: (AsExprError e, MonadError e m) => Expr a -> Getter Text (m a)
 decoded e = to $ decode e
 
   -- case parse (e^.parser) t of
-  -- Left err -> Err.throwing _ExprError (e^.exprType, t, err)
+  -- Left err -> errThrowing _ExprError (e^.exprType, t, err)
   -- Right a -> pure a
 
 -- constructors ----------------------------------------------------------------

@@ -2,4 +2,4 @@
 
 module K (begin, IO) where
 
-import K.Shell (begin, IO)
+import K.App (begin, IO)

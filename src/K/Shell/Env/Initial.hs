@@ -1,20 +1,16 @@
 -- |
 
 module K.Shell.Env.Initial
-  ( AtIvkEnv(..)
-  , AtCfgEnv(..)
-  , AtAcqEnv(..)
+  ( IvkCtxEnv(..)
+  , CfgCtxEnv(..)
+  , AcqCtxEnv(..)
 
-  , HasAtIvkEnv(..)
-  , HasAtCfgEnv(..)
+  , HasIvkCtxEnv(..)
+  , HasCfgCtxEnv(..)
 
-  , AtIvk
-  , AtCfg
-  , AtAcq
-
-  , CanIvk
-  , CanCfg
-  , CanAcq
+  , IvkM
+  , CfgM
+  , AcqM
 
   , module K.Shell.Initial
   , module K.Shell.Cfg
@@ -32,58 +28,51 @@ import Control.Monad.Catch
 
 -- runtime environment ---------------------------------------------------------
 
-data AtIvkEnv = AtIvkEnv
+data IvkCtxEnv = IvkCtxEnv
   { _iShellCfg :: ShellCfg
   , _iLogEnv   :: LogEnv
   , _invoc    :: Invoc
   }
-makeClassy ''AtIvkEnv
+makeClassy ''IvkCtxEnv
 
-instance HasLogEnv AtIvkEnv where logEnv = iLogEnv
-instance HasShellCfg AtIvkEnv where shellCfg = iShellCfg
-instance HasRunCfg AtIvkEnv where runCfg = shellCfg.runCfg
+instance HasLogEnv IvkCtxEnv where logEnv = iLogEnv
+instance HasShellCfg IvkCtxEnv where shellCfg = iShellCfg
+instance HasRunCfg IvkCtxEnv where runCfg = shellCfg.runCfg
 
-data AtCfgEnv = AtCfgEnv
+data CfgCtxEnv = CfgCtxEnv
   { _cShellCfg :: ShellCfg
   , _cLogEnv   :: LogEnv
   }
-makeClassy ''AtCfgEnv
+makeClassy ''CfgCtxEnv
 
-instance HasLogEnv AtCfgEnv where logEnv = cLogEnv
-instance HasShellCfg AtCfgEnv where shellCfg = cShellCfg
+instance HasLogEnv CfgCtxEnv where logEnv = cLogEnv
+instance HasShellCfg CfgCtxEnv where shellCfg = cShellCfg
+instance HasLocale CfgCtxEnv where locale = shellCfg.locale
+instance HasRunCfg CfgCtxEnv where runCfg = shellCfg.runCfg
 
-data AtAcqEnv = AtAcqEnv
+data AcqCtxEnv = AcqCtxEnv
   { _aShellCfg :: ShellCfg
   , _aLogEnv   :: LogEnv
   , _aKioEnv   :: KioEnv
   }
-makeClassy ''AtAcqEnv
+makeClassy ''AcqCtxEnv
 
-instance HasLogEnv AtAcqEnv where logEnv = aLogEnv
-instance HasKioEnv AtAcqEnv where kioEnv = aKioEnv
-instance HasShellCfg AtAcqEnv where shellCfg = aShellCfg
+instance HasLogEnv AcqCtxEnv where logEnv = aLogEnv
+instance HasKioEnv AcqCtxEnv where kioEnv = aKioEnv
+instance HasShellCfg AcqCtxEnv where shellCfg = aShellCfg
 
 -- shorthand -------------------------------------------------------------------
 
 -- | The different capacity levels the shell monad can run at
 
--- | Lowest capacity level
--- 1. access to cfg defaults overwritten by invoc
--- 2. running in a top-level exception handler
--- 3. access to a logging environment
-type AtIvk a = RIO AtIvkEnv a
+-- | Shorthand for a
+type IvkM a = RIO IvkCtxEnv a
 
 -- | Medium capacity level
 -- 4. access to cfg default overwritten by cfgfile overwritten by invoc
 -- 5. since locale is cfg-file-only, locale is now available
-type AtCfg a = RIO AtCfgEnv a
+type CfgM = RIO CfgCtxEnv
 
 -- | Full capacity
 -- 6. access to an acquired keysource, sink, and repeat environment
-type AtAcq a = RIO AtAcqEnv a
-
-type CanIvk m = (UIO m, MonadCatch m)
-
-type CanCfg e m = (CanIvk m, MonadReader e m, HasAtIvkEnv e, HasLogEnv e)
-
-type CanAcq e m = (CanIvk m, MonadReader e m, HasAtCfgEnv e, HasLogEnv e)
+type AcqM a = RIO AcqCtxEnv a

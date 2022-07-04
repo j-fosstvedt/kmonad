@@ -56,9 +56,9 @@ type CanLocale v r m = ( HasLocale v, AsLocaleError r
 -- | Lookup a keycode by its name
 lookupCode :: CanLocale v r m => Keyname -> m Keycode
 lookupCode n = view (namedCodes.at n)
-  >>= maybe (Err.throwing _MissingKey n) pure
+  >>= maybe (errThrowing _MissingKey n) pure
 
 -- | Lookup a rap by its name
 lookupRap :: CanLocale v r m => Name -> m Rap
 lookupRap n = view (namedRaps.at n)
-  >>= maybe (Err.throwing _MissingRap n) pure
+  >>= maybe (errThrowing _MissingRap n) pure

@@ -24,8 +24,12 @@ module K.Initial.Parsing
   , textP
   , listOfP
 
+  , terminators
+  , terminated
   , maybeRestP
   , namedP
+  , pairP
+  , prefixP
 
   , module Text.Megaparsec
   , module Text.Megaparsec.Char
@@ -38,6 +42,7 @@ import K.Initial.Util
 import Text.Megaparsec hiding (ParseError, parse, noneOf)
 import Text.Megaparsec.Char
 
+import qualified Data.Char as C
 import qualified Text.Megaparsec.Char.Lexer as X
 import qualified RIO.List as L
 import qualified RIO.Text as T
@@ -65,14 +70,14 @@ instance AsParseError SomeException where __ParseError = _SomeException
 -- -- | Run a 'Parser' on some 'Text'
 parse :: (AsParseError e, MonadError e m) => Parser a -> Text -> m a
 parse p t = case runIdentity $ parseT p t of
-  Left e -> Err.throwing __ParseError e
+  Left e -> errThrowing __ParseError e
   Right x -> pure x
 
 -- | Run a 'ParserT' on some 'Text'
 parseT :: (AsParseError e, MonadError e m1, Monad m2)
   => ParserT m2 a -> Text -> m2 (m1 a)
 parseT p t = runParserT p "" t >>= \case
-  Left e -> pure $ Err.throwing _ParseError e
+  Left e -> pure $ errThrowing _ParseError e
   Right x -> pure $ pure x
 
 -- whitespace ------------------------------------------------------------------
@@ -119,6 +124,21 @@ symbol = void . X.symbol sc
 
 -- combinators -----------------------------------------------------------------
 
+-- | Run the parser IFF it is not followed by a space or eof.
+prefixP :: ParserT m a -> ParserT m a
+prefixP p = try $ p <* notFollowedBy (void spaceChar <|> eof)
+
+-- | List of all characters that /end/ a word or sequence
+terminators :: String
+terminators = ")\""
+
+terminated :: ParserT m a -> ParserT m a
+terminated p = try $ do
+  x <- p
+
+  _ <- lookAhead $ eof <|> void eol <|> space1 <|> void (satisfy (`elem` terminators))
+  pure x
+
 -- | Parse a []-surrounded string with ,-separated values
 listOfP :: ParserT m a -> ParserT m [a]
 listOfP p = between (char '[') (char ']') $ sepBy p (hlex $ char ',')
@@ -126,9 +146,9 @@ listOfP p = between (char '[') (char ']') $ sepBy p (hlex $ char ',')
 -- | Create a parser that matches symbols to values and only consumes on match.
 namedP :: Named a -> ParserT m a
 namedP = do
-  -- Sort descending in length, and then alphabetically
-  let srt = L.sortBy . (`on` fst) $ \a b ->
-        case compare (T.length b) (T.length a) of
-          EQ -> compare a b
-          x  -> x
-  choice . map (\(s, x) -> try (string s) $> x). srt
+  let mkP (s, x) = terminated (string s) $> x
+  choice . map mkP . L.sortBy (bigger `on` fst)
+
+-- | Create a parser that matches 2 parsers in sequence as a tuple
+pairP :: ParserT m a -> ParserT m b -> ParserT m (a, b)
+pairP a b = (,) <$> a <*> b

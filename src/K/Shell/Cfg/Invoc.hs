@@ -79,7 +79,7 @@ testInvoc t = case execParserPure ivkPrefs ivkInfo . words . unpack $ t of
   _ -> devFail $ t <> " is not a valid kmonad invocation"
 
 -- | Run a function that requires an 'Invoc' on the 'Invoc' from IO
-withInvoc :: MonadIO m => ContT r m Invoc -- (Invoc -> m a) -> m a
+withInvoc :: MonadIO m => Ctx r m Invoc -- (Invoc -> m a) -> m a
 withInvoc = ContT $ \f -> f =<< liftIO (customExecParser ivkPrefs ivkInfo)
 
 -- FIXME

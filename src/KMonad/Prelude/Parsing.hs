@@ -108,8 +108,9 @@ maybeRestP = Nothing <$ eof <|> Just <$> takeRest
 namedP :: Named a -> Parser a
 namedP = do
   -- Sort descending in length, and then alphabetically
-  let srt = L.sortBy . (`on` fst) $ \a b ->
-        case compare (T.length b) (T.length a) of
-          EQ -> compare a b
-          x  -> x
+  let srt = L.sortBy (bigger `on` fst)
+  -- $ \a b ->
+  --       case compare (T.length b) (T.length a) of
+  --         EQ -> compare a b
+  --         x  -> x
   choice . map (\(s, x) -> try (string s) $> x). srt

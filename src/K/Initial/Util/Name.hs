@@ -15,6 +15,8 @@ module K.Initial.Util.Name
 
   , checkNames
   , nameFor
+  , bigger
+  , mkNameMap
   )
 
 where
@@ -50,6 +52,8 @@ instance Show NameError where
 instance Exception NameError
 instance AsNameError SomeException where _NameError = Exc.exception
 
+type CanNameError e m = (MonadError e m, AsNameError e)
+
 -- lenses ----------------------------------------------------------------------
 
 class HasName a where name :: Lens' a Name
@@ -69,7 +73,7 @@ instance HasNamed (NameMap a) a where named = to M.toList
 -- ops -------------------------------------------------------------------------
 
 -- | Check all names for validity
-checkNames :: (MonadError e m, AsNameError e, HasNames a) => a -> m ()
+checkNames :: (CanNameError e m, HasNames a) => a -> m ()
 checkNames a = do
   let ns = a^..names
   whenJust (L.find T.null ns)  $ \_ -> throwError $ _EmptyName # ()
@@ -78,3 +82,19 @@ checkNames a = do
 -- | Do a reverse-lookup for the name of some item
 nameFor :: (HasNamed s a, Eq a) => a -> s -> Maybe Name
 nameFor v = lookup v . map (view swapped) . view named
+
+-- | Compare 2 names first on length, and if equal, alphabetically
+bigger :: Name -> Name -> Ordering
+bigger a b = case compare (T.length b) (T.length a) of EQ -> compare a b
+                                                       x  -> x
+
+-- | Turn a Named into a NameMap, but error on empty or duplicate names
+mkNameMap :: CanNameError e m => Named a -> m (NameMap a)
+mkNameMap x = do
+  case L.find T.null $ x^..names of
+    Nothing -> pure ()
+    Just _  -> errThrowing _EmptyName ()
+  case duplicates $ x^..names of
+    [] -> pure ()
+    ns -> errThrowing _DuplicateNames ns
+  pure $ M.fromList x

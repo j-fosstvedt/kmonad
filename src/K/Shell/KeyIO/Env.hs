@@ -24,7 +24,7 @@ withKeySnk x = \f -> do
 withKeyRepeatEnv :: (UIO m, CanLog e m) => KeyRepeatCfg -> (KeyRepeatEnv -> m a) -> m a
 withKeyRepeatEnv _ f = f KeyRepeatEnv
 
-withKio :: (CanLog e m, UIO m, HasKioCfg c) => c -> ContT r m KioEnv --(KioEnv -> m a) -> m a
+withKio :: (CanLog e m, UIO m, HasKioCfg c) => c -> Ctx r m KioEnv --(KioEnv -> m a) -> m a
 withKio c = ContT $ \f ->
   withKeySrc (c^.keyInputCfg) $ \keysrc ->
     withKeySnk (c^.keyOutputCfg) $ \keysnk ->

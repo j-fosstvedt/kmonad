@@ -1,12 +1,13 @@
 -- |
 
 module K.Shell.Env
-  ( atIvk
-  , atCfg
-  , atAcq
+  ( ivkM
+  , cfgM
+  , acqM
 
-  , runAt
+  , inCtx
 
+  , testIvkM
   , module K.Shell.Env.Initial
   )
 where
@@ -14,55 +15,58 @@ where
 import K.Shell.Env.Initial
 import K.Shell.Error
 
-runAt :: UIO m => ContT a m env -> RIO env a -> m a
-runAt c r = runContT c $ inRIO r
+import Control.Monad.Catch
 
-atIvk :: CanIvk m => ContT r m AtIvkEnv
-atIvk = do
+-- | Run some RIO action in some Ctx
+inCtx :: UIO m => Ctx a m env -> RIO env a -> m a
+inCtx c r = runContT c $ inRIO r
+
+-- | The different capacity levels the shell monad can run at
+
+-- | Lowest capacity level
+-- 1. access to cfg defaults overwritten by invoc
+-- 2. running in a top-level exception handler
+-- 3. access to a logging environment (i.e. can call logging actions)
+ivkM :: (UIO m, MonadCatch m)
+  => Ctx r m IvkCtxEnv
+ivkM = do
   withShellHandler
   i <- withInvoc
   let c = defShellCfg ^. changed i
   l <- withLogging c
-  ContT $ \f -> f (AtIvkEnv c l i)
+  ContT $ \f -> f (IvkCtxEnv c l i)
 
-atCfg :: CanCfg e m => ContT r m AtCfgEnv
-atCfg = do
-  i <- view $ atIvkEnv.invoc
-  f <- loadCfgFile =<< view (atIvkEnv.shellCfg.cfgPath)
+-- | Like 'ivkM' but parse invocation from text instead
+--
+-- Only to be used for debugging purposes to get run an 'IvkM' in the REPL
+-- without having to run kmonad from a terminal.
+testIvkM :: (UIO m, MonadCatch m)
+  => Text -> Ctx r m IvkCtxEnv
+testIvkM t = do
+  withShellHandler
+  let i = testInvoc t
+  let c = defShellCfg ^. changed i
+  l <- withLogging c
+  ContT $ \f -> f (IvkCtxEnv c l i)
+
+-- | Medium capacity level
+-- 4. access to cfg default overwritten by cfgfile overwritten by invoc
+-- 5. since locale is cfg-file-only, locale is now available
+cfgM :: (UIO m, MonadCatch m, MonadReader e m, HasIvkCtxEnv e, HasLogEnv e)
+  => Ctx r m CfgCtxEnv
+cfgM = do
+  i <- view $ ivkCtxEnv.invoc
+  f <- loadCfgFile =<< view (ivkCtxEnv.shellCfg.cfgPath)
   let c = defShellCfg ^. changed f . changed i
   l <- withLogging c
-  ContT $ \f -> f (AtCfgEnv c l)
+  ContT $ \f -> f (CfgCtxEnv c l)
 
-atAcq :: CanAcq e m => ContT r m AtAcqEnv
-atAcq = do
-  c <- view $ atCfgEnv . shellCfg
-  l <- view $ atCfgEnv . logEnv
+-- | Full capacity
+-- 6. access to an acquired keysource, sink, and repeat environment
+acqM :: (UIO m, MonadCatch m, MonadReader e m, HasCfgCtxEnv e, HasLogEnv e)
+  => Ctx r m AcqCtxEnv
+acqM = do
+  c <- view $ cfgCtxEnv . shellCfg
+  l <- view $ cfgCtxEnv . logEnv
   k <- withKio (c^.kioCfg)
-  ContT $ \f -> f (AtAcqEnv c l k)
-
-
-
-
-
--- withShellEnvT :: UIO m => ShellCfg -> ContT r m ShellEnv
--- withShellEnvT cfg = ContT $ withShellEnv cfg
-
--- -- | Initialize a 'ShellEnv' from a 'ShellCfg' and call a function on it.
--- withShellEnv :: UIO m => ShellCfg -> (ShellEnv -> m a) -> m a
--- withShellEnv c f = withLogging c $ f . ShellEnv c
-
--- -- | Initialize a 'ShellEnvIO' from a 'ShellEnv' and call a function on it.
--- withShellEnvIO :: (CanLog e m, UIO m) =>  ShellEnv -> (ShellEnvIO -> m a) -> m a
--- withShellEnvIO e f = withKio e $ f . ShellEnvIO e
-
--- -- | Run a 'Shell' action in IO
--- runShell :: ShellCfg -> Shell a -> IO a
--- runShell cfg = handleShellError . withShellEnv cfg . inRIO
-
--- -- | flipped 'runShell', mirrors runRIO/inRIO pattern
--- inShell :: Shell a -> ShellCfg -> IO a
--- inShell = flip runShell
-
--- -- | Run a 'ShellKIO' action in 'Shell'
--- runShellKIO :: ShellKIO a -> Shell a
--- runShellKIO go = ask >>= (`withShellEnvIO` inRIO go)
+  ContT $ \f -> f (AcqCtxEnv c l k)

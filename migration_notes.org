@@ -1,0 +1,12 @@
+#+title: Migration Notes
+
+* renamed keycodes
+| original | new    | reason                         |
+|----------+--------+--------------------------------|
+| ;        | scln   | interferes with comment syntax |
+| .        | dot    |                                |
+| lalt     | altL   |                                |
+| lsft     | shiftL |                                |
+| lctl     | ctrlL  |                                |
+| lmet     | metaL  |                                |
+| -        | dash   |                                |

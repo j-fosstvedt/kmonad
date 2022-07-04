@@ -56,13 +56,13 @@ msg :: Text
 msg =  "LinUinputSnk only works on Linux"
 
 c_acquire_uinput_keysink :: CInt -> CString -> CInt -> CInt -> CInt -> IO Int
-c_acquire_uinput_keysink = Exc.throwing _OSError (Linux, msg)
+c_acquire_uinput_keysink = excThrowing _OSError (Linux, msg)
 
 c_release_uinput_keysink :: CInt -> IO Int
-c_release_uinput_keysink = Exc.throwing _OSError (Linux, msg)
+c_release_uinput_keysink = excThrowing _OSError (Linux, msg)
 
 c_send_event :: CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> IO Int
-c_send_event = Exc.throwing _OSError (Linux, msg)
+c_send_event = excThrowing _OSError (Linux, msg)
 
 #endif
 
@@ -100,7 +100,7 @@ getUinput mn = do
   -- 0x1234 0x5678 and 0x0000 are vendor-, product- and version- codes respectively
   -- As far as I can tell they are meaningless for our purposes
   liftIO (c_acquire_uinput_keysink h cstr 0x1234 0x5678 0x0000)
-    `ffiErr` Exc.throwing _UinputCreateError n
+    `ffiErr` excThrowing _UinputCreateError n
     `onException` liftIO (closeFd fd)
   pure env
 
@@ -110,7 +110,7 @@ relUinput = withFd $ \fd@(Fd h) -> do
   n <- view name
   let rel = do logInfo $ "Unregistering uinput device: " <> n
                liftIO (c_release_uinput_keysink h)
-                 `ffiErr` Exc.throwing _UinputReleaseError n
+                 `ffiErr` excThrowing _UinputReleaseError n
   let cls = do logInfo "Closing uinput device-file."
                liftIO $ closeFd fd
   rel `finally` cls

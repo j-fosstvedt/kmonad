@@ -184,12 +184,12 @@ that's an Off-Twice error.
 -}
   t <-  (`execStateT` T S.empty S.empty) . forM_ (g^..toggles) $ \case
     On a -> uses pressed (S.member a) >>= \case        -- If pressing
-      True  -> Err.throwing _OnTwiceError (tshow a)    --   but on: error twice on
+      True  -> errThrowing _OnTwiceError (tshow a)    --   but on: error twice on
       False -> pressed %= S.insert a                   --   and off: add to pressed
     Off a -> uses pressed (S.member a) >>= \case       -- If releasing
       True -> pressed %= S.delete a                    --   and on: delete from pressed
       False -> uses init (S.member a) >>= \case        --   but off: try add to seat
-        True -> Err.throwing _OffTwiceError (tshow a)  --     already part: error twice off
+        True -> errThrowing _OffTwiceError (tshow a)  --     already part: error twice off
         False -> init %= S.insert a                    --     otherwise, add to seat
   pure $ Subgest (t^.init) (t^.pressed) (Q.fromList . toList $ g^..toggles)
 
@@ -197,16 +197,16 @@ that's an Off-Twice error.
 asGesture :: (AsEmptinessError e, MonadError e m, Show a)
   => Subgest a -> m (Gesture a)
 asGesture s | s^.minSeat . to (not . S.null)
-  = Err.throwing _NonEmptyStart (map tshow . toList $ s^.minSeat)
+  = errThrowing _NonEmptyStart (map tshow . toList $ s^.minSeat)
 asGesture s | s^.minCrown . to (not . S.null)
-  = Err.throwing _NonEmptyEnd (map tshow . toList $ s^.minCrown)
+  = errThrowing _NonEmptyEnd (map tshow . toList $ s^.minCrown)
 asGesture s = pure . Gesture $ s^.backbone
 
 -- | Create a 'Gesture' from a 'Foldable' of 'Toggle's
 mkGesture :: (AsGestureError e, MonadError e m, HasToggles g a)
   => g -> m (Gesture a)
 mkGesture g = case mkSubgest g >>= asGesture of
-  Left e -> Err.throwing _GestureError e
+  Left e -> errThrowing _GestureError e
   Right x -> pure x
 
 

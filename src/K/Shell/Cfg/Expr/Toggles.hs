@@ -3,7 +3,9 @@
 TODO insert footer
 
 -}
-module K.Shell.Cfg.Expr.Toggles where
+module K.Shell.Cfg.Expr.Toggles
+  ( togglesExpr )
+where
 
 import K.Shell.Cfg.Expr.Initial
 import K.Gesture (Toggles)

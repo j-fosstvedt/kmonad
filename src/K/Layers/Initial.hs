@@ -80,6 +80,8 @@ data But c
   -- ^ Perform next button in different layer
   | BCommand Text (Maybe Text)
   -- ^ Execute a shell command on press, as well as possibly on release
+  | BBeforeAfterNext (But c) (But c)
+  -- ^ Peform a tap before and after the following button
   | BStickyKey Dt (But c)
   -- ^ Act as if a button is pressed for a period of time
   | BTrans

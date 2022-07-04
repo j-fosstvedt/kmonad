@@ -106,7 +106,7 @@ setWithExpr :: (Show a, MonadError e m, AsExprError e)
   -> Name
   -> (Text -> m (Change s))
 setWithExpr l e n t = case decode e t of
-  Left err -> Err.throwing __ExprError err
+  Left err -> errThrowing __ExprError err
   Right a  -> pure $ setVal l a ("set " <> n <> " to " <> tshow a)
 
 -- util ------------------------------------------------------------------------

@@ -21,7 +21,7 @@ instance AsShellError SomeException where _ShellError = Exc.exception
 instance AsLocaleError ShellError where _LocaleError = _ShellLocaleError
 instance AsParseError ShellError where __ParseError = _ShellParseError
 
-withShellHandler :: MonadCatch m => ContT r m ()
+withShellHandler :: MonadCatch m => Ctx r m ()
 withShellHandler = ContT $ \f -> handleShellError $ f ()
 
 -- | The outermost error-catching mechanism in KMonad
@@ -29,7 +29,7 @@ withShellHandler = ContT $ \f -> handleShellError $ f ()
 -- This currently does nothing except rethrow the error.
 handleShellError :: MonadCatch m => m a -> m a
 handleShellError = Exc.handling _ShellError handle
-  where handle = Exc.throwing _ShellError
+  where handle = excThrowing _ShellError
 
 -- |
 throwLeft :: (MonadIO m) => Either SomeException a -> m a

@@ -1,4 +1,4 @@
-module K.Shell ( begin, IO ) where
+module K.Shell ( module X ) where
 
-import K.Initial (IO)
-import K.Shell.Main (begin)
+import K.Shell.Cfg as X
+import K.Shell.Env as X
